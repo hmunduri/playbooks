@@ -15,9 +15,9 @@
   tasks:
     - name: Install Apache web server 
       action: yum name=httpd state=installed
-      async: 300
-      poll: 3
       notify: Restart HTTPD
+    - name: Install the Lynx Web Browser
+      action: yum name={{pkg_lynx}} state=installed
   handlers:
     - name: Restart HTTPD
       action: service name=httpd state=restarted
