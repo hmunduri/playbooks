@@ -1,0 +1,14 @@
+---
+ - hosts: localhost
+   tasks:
+    - name: launching instanaces
+      ec2:
+       key_name: devopsreg
+       instance_type: t2.micro
+       image: ami-97785bed
+       region: us-east-1
+       wait: yes
+       group: launch-wizard-1
+       count: 1
+      register: launch
+    - debug: msg="instance id is  {{ launch.instance_ids }}"

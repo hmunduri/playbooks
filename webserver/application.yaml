@@ -1,0 +1,8 @@
+- hosts: web
+  vars: 
+    author_name: Test User
+  vars_files:
+  - vars.yaml
+  tasks:
+  - name: Install Lynx on web servicer
+    yum: pkg=lynx state=installed update_cache=true
