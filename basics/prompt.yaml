@@ -1,0 +1,16 @@
+--- # PROMPT FOR USR PACKAGE EXAMPLE
+- hosts: web
+  user: ansible
+  sudo: yes
+  connection: ssh 
+  gather_facts: no
+  vars: 
+    playbook_version: 0.1b
+  vars_prompt: 
+    - name: pkgtoinstall 
+      prompt: Install which Package? 
+      default: telnet
+      private: no
+  tasks:
+    - name: Install the indicated package
+      yum: pkg={{ pkgtoinstall }} state=latest

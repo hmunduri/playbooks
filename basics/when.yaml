@@ -1,0 +1,17 @@
+--- # When Playbook example ( Condition) 
+- hosts: all
+  user: ansible
+  sudo: yes
+  connection: ssh 
+  vars:
+    playbook_type: conditionalexample
+  vars_files:
+    - conf/copyright.yaml
+    - conf/webdefaults.yaml
+  tasks:
+    - name: Install Apache apporpriate to the distribution type(Debian/Ubuntu)
+      command: apt-get -y install apache2
+      when: ansible_os_family == "Debian"
+    - name: Install Apache Appropriate to the distribution type(RedHat/CentOS)
+      command: yum -y install httpd
+      when: ansible_os_family == "RedHat"

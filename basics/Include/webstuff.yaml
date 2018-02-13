@@ -1,0 +1,13 @@
+--- # Web Playbook into discrete Plays
+- hosts: web
+  user: ansible
+  sudo: yes
+  connection: ssh
+  vars_files: 
+  - variables/variables.yaml 
+  tasks: 
+  - include: packages/packages.yaml
+  - include: commands/commands.yaml
+  - include: handlers/handlers.yaml
+  handlers:
+  - include: handlers/handlers.yaml

@@ -1,0 +1,12 @@
+--- # RunOnce Playbook Example
+- hosts: web
+  user: ansible
+  sudo: yes 
+  connection: ssh 
+  gather_facts: no
+  tasks: 
+    - name: Run the Uptime Command on all hosts
+      raw: /usr/bin/uptime >> /home/ansible/uptime.log
+    - name: List the /var/ directory and log it 
+      raw: ls -al /var >> /home/test/dir.list
+      run_once: true

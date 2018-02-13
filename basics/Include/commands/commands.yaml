@@ -1,0 +1,2 @@
+- name: Make sure Lynx is installed and then log it 
+  raw: yum list installed | grep -i lynx > /home/ansible/install.log
