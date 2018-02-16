@@ -1,0 +1,12 @@
+--- # Simple Playbook for installation of Lynx and telnet 
+- hosts: web 
+  user: ansible 
+  sudo: yes
+  connection: ssh
+  gather_facts: yes
+  tasks: 
+  - name: Install package Lynx
+    yum: pkg=lynx state=latest
+  - name: telnet package verification 
+    yum: pkg=telnet state=present update_cache=true
+  - debug: var=result
