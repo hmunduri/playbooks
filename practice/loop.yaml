@@ -1,0 +1,13 @@
+--- #Loop Playbook example
+- hosts: web 
+  user: ansible 
+  sudo: yes
+  connection: ssh 
+  gather_facts: no 
+  tasks: 
+    - name: Install package
+      yum: pkg={{ item }} state=latest
+      with_items:
+        - lynx
+        - telnet
+        - httpd
