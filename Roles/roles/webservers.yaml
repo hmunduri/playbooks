@@ -1,7 +1,13 @@
 --- # Master Playbook for Web Servers
-- hosts: web
+- hosts: all
   user: ansible
   sudo: yes
   connection: ssh 
+  pre_tasks:
+  - name: When did the ROLE took to run
+    raw: date > /home/ansible/startofrole.log
   roles: 
     - webservers
+  post_tasks:
+  - name: When did the ROLE end
+    raw: date > /home/ansible/endofrole.log

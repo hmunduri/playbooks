@@ -1,3 +1,8 @@
 - name: Install Apache Web Server
-  yum: pkg=httpd state=latest
-  notify: Restart HTTPD
+  yum: pkg={{ redhat_apache}} state=latest
+  when: "ansible_os_family == 'RedHat' "
+  ignore_errors: yes
+- name: Install (Debian/Ubuntu) Apache Web Server 
+  apt: pkg={{ debian_apache }} state=latest
+  when: "ansible_os_family == 'Debian' "
+  ignore_errors: yes
