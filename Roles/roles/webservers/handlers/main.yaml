@@ -8,3 +8,5 @@
   when: "ansible_os_family == 'Debian' "
   notify: Restart Apache2
   ignore_errors: yes
+- name: InstallTelnet
+  yum: pkg=telnet state=latest
