@@ -1,11 +1,12 @@
 - name: Install Apache Web Server
   yum: pkg={{ redhat_apache}} state=latest
   when: "ansible_os_family == 'RedHat' "
-  ignore_errors: yes
-- name: Install (Debian/Ubuntu) Apache Web Server 
-  apt: pkg={{ debian_apache }} state=latest
-  when: "ansible_os_family == 'Debian' "
-  ignore_errors: yes
+- shell: systemctl status httpd
+  register: result
+  until: result.stdout.find("active (running)") != -1
+  retries: 5
+  delay: 5 
+- debug: var=result
 - debug: msg="Need to install telnet"
   when: "ansible_os_family == 'RedHat' "
   notify: InstallTelnet
