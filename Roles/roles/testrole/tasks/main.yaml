@@ -1,0 +1,17 @@
+- name: Install Apache Web Server
+  yum: pkg={{ redhat_apache}} state=latest
+  when: "ansible_os_family == 'RedHat' "
+  ignore_errors: yes
+- name: Add a list of software 
+  yum: pkg={{ item }} state=latest
+  with_items: 
+  - telnet 
+  - lynx
+  tags: install_list
+- name: Install (Debian/Ubuntu) Apache Web Server 
+  apt: pkg={{ debian_apache }} state=latest
+  when: "ansible_os_family == 'Debian' "
+  ignore_errors: yes
+- debug: msg="Need to install telnet"
+  when: "ansible_os_family == 'RedHat' "
+  notify: InstallTelnet
