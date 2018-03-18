@@ -10,3 +10,13 @@ cidrs       = {
   rds2     = "10.0.6.0/24"
   rds3     = "10.0.7.0/24"
 }
+localip    = "54.187.8.142/32"
+domain_name = "cloudera9"
+db_instance_class = "db.t2.micro"
+dbname = "terransibledb"
+dbuser = "terransible"
+dbpassword = "terransiblepass"
+dev_instance_type = "t2.micro"
+dev_ami = "ami-1853ac65"
+public_key_path = "/home/ansible/.ssh/id_rsa.pub"
+key_name = "id_rsa"

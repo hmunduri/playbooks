@@ -209,3 +209,194 @@ resource "aws_route_table_association" "wp_private2_assoc" {
   subnet_id      = "${aws_subnet.wp_private2_subnet.id}"
   route_table_id = "${aws_default_route_table.wp_private_rt.id}"
 }
+
+#Security Groups
+
+resource "aws_security_group" "wp_dev_sg" {
+  name        = "wp_dev_sg"
+  description = "Used for access to the dev instance"
+  vpc_id      = "$(aws_vpc.wp_vpc.id}"
+
+  # SSH 
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["${var.localip}"]
+  }
+
+  #HTTP Rule 
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["${var.localip}"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+#Public Security Group 
+
+resource "aws_security_group" "wp_public_sg" {
+  name        = "wp_public_sg"
+  description = "Used fpr the elastic load balancer for public access"
+  vpc_id      = "${aws_vpc.wp_vpc.id}"
+
+  #HTTP 
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# Private Security Group 
+
+resource "aws_security_group" "wp_private_sg" {
+  name        = "wp_private_sg"
+  description = "Used for private instances"
+  vpc_id      = "${aws_vpc.wp_vpc.id}"
+
+  # Access from VPC 
+
+  ingress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["${var.vpc_cidr}"]
+  }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# RDS Security Group 
+resource "aws_security_group" "wp_rds_sg" {
+  name        = "wp_rds_sg"
+  description = "Used for RDS Instacnes"
+  vpc_id      = "${aws_vpc.wp_vpc.id}"
+
+  #SQL Access
+  ingress {
+    from_port = 3306
+    to_port   = 3306
+    protocol  = "tcp"
+
+    security_groups = ["${aws_security_group.wp_dev_sg.id}",
+      "${aws_security_group.wp_public_sg.id}",
+      "${aws_security_group.wp_private_sg.id}",
+    ]
+  }
+}
+
+# VPC Endpoint for S3 
+resource "aws_vpc_endpoint" "wp_private-s3_endpoint" {
+  vpc_id = "${aws_vpc.wp_vpc.id}"
+
+  service_name = "com.amazonaws.${var.aws_region}.s3"
+
+  route_table_ids = ["${aws_vpc.wp_vpc.main_route_table_id}",
+    "${aws_route_table.wp_public_rt.id}",
+  ]
+
+  policy = <<POLICY
+
+{
+   "statement": [
+       {
+          "Action": "*",
+          "Effect": "Allow",
+          "Resource": "*",
+          "Principal": "*"
+
+       }
+    ]
+ }
+
+POLICY
+}
+
+#---------- S3 Code Bucket -----------
+
+resource "random_id" "wp_code_bucket" {
+  byte_length = 2
+}
+
+resource "aws_s3_bucket" "code" {
+  bucket        = "${var.domain_name}_${random_id.wp_code_bucket.dec}"
+  acl           = "private"
+  force_destroy = true
+
+  tags {
+    Name = "code bucket"
+  }
+}
+
+#----- RDS ---------
+
+resource "aws_db_instance" "wp_db" {
+  allocated_storage      = 10
+  engine                 = "mysql"
+  engine_version         = "5.6.27"
+  instance_class         = "${var.db_instance_class}"
+  name                   = "${var.dbname}"
+  username               = "${var.dbuser}"
+  password               = "${var.dbpassword}"
+  db_subnet_group_name   = "${aws_db_subnet_group.wp_rds_subnetgroup.name}"
+  vpc_security_group_ids = ["${aws_security_group.wp_rds_sg.id}"]
+  skip_final_snapshot    = true
+}
+
+# --- Dev Server -------
+
+#Key Pair
+
+resource "aws_key_pair" "wp_auth" {
+  key_name = "${var.key_name}"
+  public_key = "${file(var.public_key_path)}"
+}
+resource "aws_instance" "wp_dev" {
+  instance_type = "{var.dev_instance_type}"
+  ami = "${var.dev_ami}"
+
+  tags {
+    Name = "wp_dev"
+  }
+  key_name = "${aws_key_pair.wp_auth.id}"
+  vpc_security_group_ids = ["{aws_security_group.wp_dev_sg.id}"]
+  iam_instance_profile = "${aws_iam_instance_profile.s3_access_profile.id}"
+  subnet_id = "${aws_subnet.wp_public1_subnet.id}"
+
+  provisioner "local-exec" {
+    command = <<EOD
+cat <<EOF > aws_hosts
+[dev]
+${aws_instance.wp_dev.public_ip}
+[dev:vars]
+s3code=${aws_s3_bucket.code.bucket}
+domain=${var.domain_name}
+EOF
+EOD
+  }
+
+  provisioner "local-exec" {
+    command = "aws ec2 wait instance-status-ok --instance-ids ${aws_instance.wp_dev.id} --profile terransible && ansible-playbook -i aws_hosts wordpress.yml"
+   }
+}
